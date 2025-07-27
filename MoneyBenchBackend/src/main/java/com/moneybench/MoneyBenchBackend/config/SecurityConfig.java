@@ -1,6 +1,5 @@
 package com.moneybench.MoneyBenchBackend.config;
 
-//import com.moneybench.MoneyBenchBackend.security.JwtRequestFilter;
 import com.moneybench.MoneyBenchBackend.security.JwtRequestFilter;
 import com.moneybench.MoneyBenchBackend.service.AppUserDetailsService;
 
@@ -14,12 +13,8 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -36,23 +31,21 @@ public class SecurityConfig
     private final AppUserDetailsService appUserDetailsService;
     private final JwtRequestFilter jwtRequestFilter;
 
-//        @Bean
+    // Uncomment and modify if you want to use in-memory for tests
+//    @Bean
 //    public UserDetailsService userDetailsService() {
 //        UserDetails admin = User.builder()
 //                .username("admin")
-//                .password(passwordEncoder().encode("admin123")) // encoded password
+//                .password(passwordEncoder().encode("admin123"))
 //                .roles("ADMIN")
 //                .build();
-//
 //        UserDetails user = User.builder()
 //                .username("user")
 //                .password(passwordEncoder().encode("user123"))
 //                .roles("USER")
 //                .build();
-//
 //        return new InMemoryUserDetailsManager(admin, user);
 //    }
-
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -61,20 +54,23 @@ public class SecurityConfig
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/v1.0/profile/register",
-                                "/api/v1.0/profile/activate",
-                                "/api/v1.0/profile/login",
-                                "/api/v1.0/health/**",
-                                "/api/v1.0/status/**"
+                                "/profile/register",
+                                "/profile/activate",
+                                "/profile/login",
+                                "/health/**",
+                                "/status/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults()); // Use HTTP Basic Auth
+                // Disable HTTP Basic auth to rely fully on JWT
+                //.httpBasic(Customizer.withDefaults())
+                .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }
 
-
+    // Legacy example config for form login, disabled for now
 //    @Bean
 //    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception
 //    {
@@ -89,11 +85,10 @@ public class SecurityConfig
 //                        ).permitAll()
 //                        .and().formLogin(Customizer.withDefaults())
 //                        .anyRequest().authenticated());
-////                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-//                //.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+//        //.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+//        //.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 //        return httpSecurity.build();
 //    }
-
 
     @Bean
     public PasswordEncoder passwordEncoder()
